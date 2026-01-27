@@ -1,0 +1,42 @@
+import com.android.build.gradle.LibraryExtension
+import com.android.build.gradle.AppExtension
+import org.gradle.api.tasks.Delete
+import org.gradle.api.file.Directory
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+val newBuildDir: Directory =
+    rootProject.layout.buildDirectory
+        .dir("../../build")
+        .get()
+rootProject.layout.buildDirectory.value(newBuildDir)
+
+subprojects {
+
+    // 👉 IMPORTANT: Enable buildConfig for all Android modules
+    plugins.withId("com.android.library") {
+        extensions.configure<LibraryExtension> {
+            buildFeatures.buildConfig = true
+        }
+    }
+
+    plugins.withId("com.android.application") {
+        extensions.configure<AppExtension> {
+            buildFeatures.buildConfig = true
+        }
+    }
+
+    val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
+    project.layout.buildDirectory.value(newSubprojectBuildDir)
+
+    project.evaluationDependsOn(":app")
+}
+
+tasks.register<Delete>("clean") {
+    delete(rootProject.layout.buildDirectory)
+}
