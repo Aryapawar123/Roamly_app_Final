@@ -4,6 +4,12 @@ import 'screens/login_screen.dart';
 import 'screens/signup_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/forgetpassword_screen.dart';
+import 'screens/create_trip_screen.dart';
+import 'screens/expense_split_screen.dart';
+import 'screens/forgetpassword_screen.dart';
+import 'screens/group_members_screen.dart';
+import 'screens/memory_timeline_screen.dart';
+import 'screens/my_trips_screen.dart';
 import 'firebase_options.dart';
 
 void main() async {

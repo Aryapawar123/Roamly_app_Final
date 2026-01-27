@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'forgetpassword_screen.dart';
+import 'home_screen.dart';
 
 
 class LoginScreen extends StatefulWidget {
@@ -197,8 +198,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       height: 56,
                       child: ElevatedButton(
                         onPressed: () {
-                          // Handle login
-                        },
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => HomeScreen(),
+                          ),
+                        );
+                      },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFE8913A),
                           foregroundColor: Colors.white,
