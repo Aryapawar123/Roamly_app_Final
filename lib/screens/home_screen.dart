@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'goadetails_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,32 +23,51 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
-              _buildHeader(),
-              
-              const SizedBox(height: 16),
-              
-              // Search Bar
+              const SizedBox(height: 40),
+
+              _buildWhereToText(),
+
+              const SizedBox(height: 24),
+
               _buildSearchBar(),
-              
+
               const SizedBox(height: 24),
-              
-              // Popular Destinations Section
+
               _buildPopularDestinations(),
-              
+
               const SizedBox(height: 24),
-              
-              // Trending Experiences Section
+
               _buildTrendingExperiences(),
-              
+
               const SizedBox(height: 16),
             ],
           ),
+
         ),
       ),
       bottomNavigationBar: _buildBottomNavBar(),
     );
   }
+Widget _buildWhereToText() {
+  return const Padding(
+    padding: EdgeInsets.symmetric(horizontal: 24),
+    child: Center(
+      child: Text(
+        'Where do you\nwanna go ?',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontFamily: 'Roboto',
+          fontSize: 34,
+          fontWeight: FontWeight.w800,
+          color: Color(0xFF1A1A1A),
+          height: 1.15,
+          letterSpacing: -0.5,
+        ),
+      ),
+    ),
+  );
+}
+
 
   Widget _buildHeader() {
     return Padding(
@@ -146,7 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: const Color(0xFFF8F8F8),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: const Color(0xFFEEEEEE),
             width: 1,
@@ -233,13 +253,26 @@ class _HomeScreenState extends State<HomeScreen> {
                 rating: 4.7,
               ),
               const SizedBox(width: 16),
-              _buildDestinationCard(
-                image: 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=400&h=500&fit=crop',
-                title: 'Goa',
-                date: 'Dec 20 - 26',
-                type: 'Beach Vacation',
-                rating: 4.6,
+
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const GoaDetailScreen(),
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: _buildDestinationCard(
+                  image: 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=400&h=500&fit=crop',
+                  title: 'Goa',
+                  date: 'Dec 20 - 26',
+                  type: 'Beach Vacation',
+                  rating: 4.6,
+                ),
               ),
+
             ],
           ),
         ),
