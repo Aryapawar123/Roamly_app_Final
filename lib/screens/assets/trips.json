@@ -1,0 +1,117 @@
+[
+  {
+    "tripId": "trip_001",
+    "tripName": "Goa Adventure",
+    "city": "Goa",
+    "country": "India",
+    "startDate": "2026-02-01",
+    "endDate": "2026-02-05",
+    "energyLevel": "Balanced",
+    "endTime": "19:00",
+    "creatorUid": "user_001",
+    "createdAt": "2026-01-28T09:30:00Z",
+    "updatedAt": "2026-01-28T10:00:00Z",
+    "itinerary": [
+      {"day":1,"placeId":"place_001","placeName":"Baga Beach","locationLat":15.5555,"locationLng":73.7777,"startTime":"10:00","endTime":"12:00","priority":"Must-visit","notes":"Try water sports","visited":false},
+      {"day":1,"placeId":"place_002","placeName":"Fort Aguada","locationLat":15.4978,"locationLng":73.7715,"startTime":"12:30","endTime":"14:00","priority":"Optional","notes":"","visited":false}
+    ],
+    "members":[
+      {"uid":"user_001","name":"Arya","role":"Planner","avatarUrl":"https://example.com/avatar1.png","joinedAt":"2026-01-28T09:31:00Z"},
+      {"uid":"user_002","name":"Ram","role":"Viewer","avatarUrl":"https://example.com/avatar2.png","joinedAt":"2026-01-28T09:32:00Z"}
+    ],
+    "tripCode":"GOA1234",
+    "settings":{"offlineMode":false,"emergencyMode":false,"preferenceBalancer":{"temples":1,"cafes":1,"shopping":1}}
+  },
+  {
+    "tripId": "trip_002",
+    "tripName": "Jaipur Explorer",
+    "city": "Jaipur",
+    "country": "India",
+    "startDate": "2026-03-10",
+    "endDate": "2026-03-14",
+    "energyLevel": "Packed",
+    "endTime": "20:00",
+    "creatorUid": "user_003",
+    "createdAt": "2026-01-28T10:00:00Z",
+    "updatedAt": "2026-01-28T10:05:00Z",
+    "itinerary":[
+      {"day":1,"placeId":"place_003","placeName":"Amber Fort","locationLat":26.9855,"locationLng":75.8511,"startTime":"09:00","endTime":"11:00","priority":"Must-visit","notes":"","visited":false},
+      {"day":1,"placeId":"place_004","placeName":"City Palace","locationLat":26.9258,"locationLng":75.8267,"startTime":"11:30","endTime":"13:00","priority":"Optional","notes":"Photography spot","visited":false}
+    ],
+    "members":[
+      {"uid":"user_003","name":"Nina","role":"Planner","avatarUrl":"https://example.com/avatar3.png","joinedAt":"2026-01-28T10:01:00Z"},
+      {"uid":"user_004","name":"Amit","role":"Viewer","avatarUrl":"https://example.com/avatar4.png","joinedAt":"2026-01-28T10:02:00Z"}
+    ],
+    "tripCode":"JAI5678",
+    "settings":{"offlineMode":false,"emergencyMode":false,"preferenceBalancer":{"temples":2,"cafes":1,"shopping":2}}
+  },
+  {
+    "tripId": "trip_003",
+    "tripName": "Kerala Backwaters",
+    "city": "Alleppey",
+    "country": "India",
+    "startDate": "2026-04-05",
+    "endDate": "2026-04-09",
+    "energyLevel": "Relaxed",
+    "endTime": "18:00",
+    "creatorUid": "user_005",
+    "createdAt": "2026-01-28T10:10:00Z",
+    "updatedAt": "2026-01-28T10:15:00Z",
+    "itinerary":[
+      {"day":1,"placeId":"place_005","placeName":"Houseboat Cruise","locationLat":9.4981,"locationLng":76.3388,"startTime":"10:00","endTime":"14:00","priority":"Must-visit","notes":"Lunch included","visited":false},
+      {"day":1,"placeId":"place_006","placeName":"Alleppey Beach","locationLat":9.4930,"locationLng":76.3225,"startTime":"15:00","endTime":"17:00","priority":"Optional","notes":"","visited":false}
+    ],
+    "members":[
+      {"uid":"user_005","name":"Riya","role":"Planner","avatarUrl":"https://example.com/avatar5.png","joinedAt":"2026-01-28T10:11:00Z"},
+      {"uid":"user_006","name":"Vikram","role":"Viewer","avatarUrl":"https://example.com/avatar6.png","joinedAt":"2026-01-28T10:12:00Z"}
+    ],
+    "tripCode":"KER1234",
+    "settings":{"offlineMode":false,"emergencyMode":false,"preferenceBalancer":{"temples":1,"cafes":2,"shopping":1}}
+  },
+  {
+    "tripId": "trip_004",
+    "tripName": "Mumbai City Tour",
+    "city": "Mumbai",
+    "country": "India",
+    "startDate": "2026-05-01",
+    "endDate": "2026-05-04",
+    "energyLevel": "Balanced",
+    "endTime": "20:00",
+    "creatorUid": "user_007",
+    "createdAt": "2026-01-28T10:20:00Z",
+    "updatedAt": "2026-01-28T10:25:00Z",
+    "itinerary":[
+      {"day":1,"placeId":"place_007","placeName":"Gateway of India","locationLat":18.9220,"locationLng":72.8347,"startTime":"09:00","endTime":"11:00","priority":"Must-visit","notes":"","visited":false},
+      {"day":1,"placeId":"place_008","placeName":"Marine Drive","locationLat":18.9430,"locationLng":72.8233,"startTime":"11:30","endTime":"13:00","priority":"Optional","notes":"Sunset view","visited":false}
+    ],
+    "members":[
+      {"uid":"user_007","name":"Sakshi","role":"Planner","avatarUrl":"https://example.com/avatar7.png","joinedAt":"2026-01-28T10:21:00Z"},
+      {"uid":"user_008","name":"Rohan","role":"Viewer","avatarUrl":"https://example.com/avatar8.png","joinedAt":"2026-01-28T10:22:00Z"}
+    ],
+    "tripCode":"MUM4321",
+    "settings":{"offlineMode":false,"emergencyMode":false,"preferenceBalancer":{"temples":1,"cafes":1,"shopping":2}}
+  },
+  {
+    "tripId": "trip_005",
+    "tripName": "Rishikesh Adventure",
+    "city": "Rishikesh",
+    "country": "India",
+    "startDate": "2026-06-10",
+    "endDate": "2026-06-14",
+    "energyLevel": "Packed",
+    "endTime": "19:00",
+    "creatorUid": "user_009",
+    "createdAt": "2026-01-28T10:30:00Z",
+    "updatedAt": "2026-01-28T10:35:00Z",
+    "itinerary":[
+      {"day":1,"placeId":"place_009","placeName":"Lakshman Jhula","locationLat":30.0569,"locationLng":78.2670,"startTime":"08:00","endTime":"10:00","priority":"Must-visit","notes":"","visited":false},
+      {"day":1,"placeId":"place_010","placeName":"Neer Garh Waterfall","locationLat":30.0740,"locationLng":78.2667,"startTime":"10:30","endTime":"12:30","priority":"Optional","notes":"Pack snacks","visited":false}
+    ],
+    "members":[
+      {"uid":"user_009","name":"Karan","role":"Planner","avatarUrl":"https://example.com/avatar9.png","joinedAt":"2026-01-28T10:31:00Z"},
+      {"uid":"user_010","name":"Priya","role":"Viewer","avatarUrl":"https://example.com/avatar10.png","joinedAt":"2026-01-28T10:32:00Z"}
+    ],
+    "tripCode":"RIS6789",
+    "settings":{"offlineMode":false,"emergencyMode":false,"preferenceBalancer":{"temples":2,"cafes":1,"shopping":1}}
+  }
+]
