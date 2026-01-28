@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -208,18 +210,31 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           height: 56,
                           child: ElevatedButton(
                             onPressed: _isEmailValid
-                                ? () {
-                                    // Navigate to verification screen
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => VerificationSentScreen(
-                                          email: _emailController.text,
+                                ? () async {
+                                    try {
+                                      await FirebaseAuth.instance.sendPasswordResetEmail(
+                                        email: _emailController.text.trim(),
+                                      );
+
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => VerificationSentScreen(
+                                            email: _emailController.text.trim(),
+                                          ),
                                         ),
-                                      ),
-                                    );
+                                      );
+                                    } on FirebaseAuthException catch (e) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(e.message ?? 'Something went wrong'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
                                   }
                                 : null,
+
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFE8913A),
                               disabledBackgroundColor: Colors.grey.shade300,
@@ -412,15 +427,28 @@ class VerificationSentScreen extends StatelessWidget {
                     width: double.infinity,
                     height: 56,
                     child: OutlinedButton(
-                      onPressed: () {
-                        // Resend email logic
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Reset link sent again!'),
-                            backgroundColor: Color(0xFFE8913A),
-                          ),
-                        );
+                      onPressed: () async {
+                        try {
+                          await FirebaseAuth.instance.sendPasswordResetEmail(
+                            email: email,
+                          );
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Reset link sent again!'),
+                              backgroundColor: Color(0xFFE8913A),
+                            ),
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Failed to resend email'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
                       },
+
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(
                           color: Color(0xFFE8913A),
