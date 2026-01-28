@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -9,10 +11,16 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  bool _isLoading = false;
+
   final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
+
   bool _obscurePassword = true;
   bool _agreeToTerms = false;
 
@@ -25,6 +33,58 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
+  // 🔥 FIREBASE SIGNUP LOGIC
+  Future<void> _createAccount() async {
+    if (!_agreeToTerms) return;
+
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final fullName = _fullNameController.text.trim();
+    final phone = _phoneController.text.trim();
+
+    if (email.isEmpty || password.isEmpty || fullName.isEmpty) {
+      _showSnackBar('Please fill all required fields');
+      return;
+    }
+
+    try {
+      setState(() => _isLoading = true);
+
+      // 1️⃣ Create user in Firebase Auth
+      UserCredential userCredential =
+          await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      final uid = userCredential.user!.uid;
+
+      // 2️⃣ Store extra data in Firestore
+      await _firestore.collection('users').doc(uid).set({
+        'fullName': fullName,
+        'email': email,
+        'phone': phone,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      _showSnackBar('Account created successfully 🎉');
+
+      // 3️⃣ Go back to login screen
+      Navigator.pop(context);
+    } on FirebaseAuthException catch (e) {
+      _showSnackBar(e.message ?? 'Signup failed');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  // ✅ SNACKBAR HELPER (REQUIRED)
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -32,7 +92,6 @@ class _SignupScreenState extends State<SignupScreen> {
       body: SafeArea(
         child: Stack(
           children: [
-            // Decorative "R" watermark
             Positioned(
               bottom: 20,
               right: -30,
@@ -45,7 +104,6 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
               ),
             ),
-            // Main content
             SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -53,19 +111,12 @@ class _SignupScreenState extends State<SignupScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 16),
-                    // Header with back button
+
                     Row(
                       children: [
                         GestureDetector(
                           onTap: () => Navigator.pop(context),
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            child: const Icon(
-                              Icons.arrow_back_ios,
-                              size: 20,
-                              color: Colors.black87,
-                            ),
-                          ),
+                          child: const Icon(Icons.arrow_back_ios, size: 20),
                         ),
                         const Expanded(
                           child: Text(
@@ -74,45 +125,17 @@ class _SignupScreenState extends State<SignupScreen> {
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
-                              color: Colors.black87,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 36), // Balance the back button
+                        const SizedBox(width: 36),
                       ],
                     ),
+
                     const SizedBox(height: 24),
-                    // Step indicator
                     _buildStepIndicator(),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Personal details & account setup',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[500],
-                      ),
-                    ),
                     const SizedBox(height: 24),
-                    // Join Roamly section
-                    const Text(
-                      'Join Roamly',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Start your smart, human-centric travel journey today.',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    // Form fields
+
                     _buildFormField(
                       label: 'Full Name',
                       controller: _fullNameController,
@@ -120,6 +143,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       prefixIcon: Icons.person_outline,
                     ),
                     const SizedBox(height: 16),
+
                     _buildFormField(
                       label: 'Email Address',
                       controller: _emailController,
@@ -128,14 +152,16 @@ class _SignupScreenState extends State<SignupScreen> {
                       keyboardType: TextInputType.emailAddress,
                     ),
                     const SizedBox(height: 16),
+
                     _buildFormField(
                       label: 'Phone Number',
                       controller: _phoneController,
-                      hintText: '+1234 567 890',
+                      hintText: '+1234567890',
                       prefixIcon: Icons.phone_outlined,
                       keyboardType: TextInputType.phone,
                     ),
                     const SizedBox(height: 16),
+
                     _buildFormField(
                       label: 'Password',
                       controller: _passwordController,
@@ -144,121 +170,69 @@ class _SignupScreenState extends State<SignupScreen> {
                       isPassword: true,
                     ),
                     const SizedBox(height: 16),
-                    // Terms and conditions
+
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: Checkbox(
-                            value: _agreeToTerms,
-                            onChanged: (value) {
-                              setState(() {
-                                _agreeToTerms = value ?? false;
-                              });
-                            },
-                            activeColor: const Color(0xFFE8913A),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            side: BorderSide(
-                              color: Colors.grey[400]!,
-                              width: 1.5,
-                            ),
-                          ),
+                        Checkbox(
+                          value: _agreeToTerms,
+                          onChanged: (v) => setState(() => _agreeToTerms = v!),
+                          activeColor: const Color(0xFFE8913A),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: RichText(
-                            text: TextSpan(
-                              text: 'I agree to the ',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[600],
-                              ),
-                              children: [
-                                TextSpan(
-                                  text: 'Terms & Conditions',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: Color(0xFFE8913A),
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  recognizer: TapGestureRecognizer()
-                                    ..onTap = () {
-                                      // Handle terms tap
-                                    },
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                        const Text('I agree to the Terms & Conditions'),
                       ],
                     ),
+
                     const SizedBox(height: 24),
-                    // Create Account button
+
                     SizedBox(
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: _agreeToTerms
-                            ? () {
-                                // Handle create account
-                              }
-                            : null,
+                        onPressed:
+                            _agreeToTerms && !_isLoading ? _createAccount : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFE8913A),
-                          disabledBackgroundColor: const Color(0xFFE8913A).withOpacity(0.6),
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          elevation: 0,
                         ),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Create Account',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                        child: _isLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
+                            : const Text(
+                                'Create Account',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                            ),
-                            SizedBox(width: 8),
-                            Icon(Icons.arrow_forward, size: 20),
-                          ],
-                        ),
                       ),
                     ),
+
                     const SizedBox(height: 24),
-                    // Login link
+
                     Center(
                       child: RichText(
                         text: TextSpan(
                           text: 'Already have an account? ',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
+                          style: TextStyle(color: Colors.grey[600]),
                           children: [
                             TextSpan(
                               text: 'Login',
                               style: const TextStyle(
-                                fontSize: 14,
                                 color: Color(0xFFE8913A),
                                 fontWeight: FontWeight.w600,
                               ),
                               recognizer: TapGestureRecognizer()
-                                ..onTap = () {
-                                  Navigator.pop(context);
-                                },
+                                ..onTap = () => Navigator.pop(context),
                             ),
                           ],
                         ),
                       ),
                     ),
+
                     const SizedBox(height: 32),
                   ],
                 ),
@@ -273,51 +247,13 @@ class _SignupScreenState extends State<SignupScreen> {
   Widget _buildStepIndicator() {
     return Row(
       children: [
-        Text(
-          'Step 1 of 2',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: Colors.grey[700],
-          ),
-        ),
+        const Text('Step 1 of 2'),
         const SizedBox(width: 12),
         Expanded(
-          child: Stack(
-            children: [
-              // Background track
-              Container(
-                height: 6,
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-              // Progress fill
-              FractionallySizedBox(
-                widthFactor: 0.5,
-                child: Container(
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE8913A),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 12),
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: const Color(0xFFE8913A).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(
-            Icons.account_circle_outlined,
-            size: 18,
-            color: Color(0xFFE8913A),
+          child: LinearProgressIndicator(
+            value: 0.5,
+            backgroundColor: Colors.grey[200],
+            color: const Color(0xFFE8913A),
           ),
         ),
       ],
@@ -335,63 +271,26 @@ class _SignupScreenState extends State<SignupScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: Colors.black87,
-          ),
-        ),
+        Text(label),
         const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.grey[300]!,
-              width: 1,
-            ),
-          ),
-          child: TextField(
-            controller: controller,
-            obscureText: isPassword ? _obscurePassword : false,
-            keyboardType: keyboardType,
-            style: const TextStyle(
-              fontSize: 15,
-              color: Colors.black87,
-            ),
-            decoration: InputDecoration(
-              hintText: hintText,
-              hintStyle: TextStyle(
-                fontSize: 15,
-                color: Colors.grey[400],
-              ),
-              prefixIcon: Icon(
-                prefixIcon,
-                color: Colors.grey[500],
-                size: 22,
-              ),
-              suffixIcon: isPassword
-                  ? GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
-                      child: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                        color: Colors.grey[500],
-                        size: 22,
-                      ),
-                    )
-                  : null,
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 16,
-              ),
+        TextField(
+          controller: controller,
+          obscureText: isPassword ? _obscurePassword : false,
+          keyboardType: keyboardType,
+          decoration: InputDecoration(
+            hintText: hintText,
+            prefixIcon: Icon(prefixIcon),
+            suffixIcon: isPassword
+                ? IconButton(
+                    icon: Icon(_obscurePassword
+                        ? Icons.visibility
+                        : Icons.visibility_off),
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
+                  )
+                : null,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
         ),
