@@ -1,4 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'smart_itinerary_screen.dart';
 
 class CreateTripScreen extends StatefulWidget {
   const CreateTripScreen({super.key});
@@ -8,18 +11,35 @@ class CreateTripScreen extends StatefulWidget {
 }
 
 class _CreateTripScreenState extends State<CreateTripScreen> {
-  static const Color primaryOrange = Color(0xFFE8913A);
-  static const Color lightOrange = Color(0xFFFFF4EC);
-  static const Color textDark = Color(0xFF1A1A1A);
-  static const Color textGray = Color(0xFF6B7280);
-  static const Color borderColor = Color(0xFFE5E7EB);
-  static const Color cardBackground = Color(0xFFFAFAFA);
-
+  // Controllers
   final TextEditingController _destinationController = TextEditingController();
+
+  // Basic fields
   DateTime? _startDate;
   DateTime? _endDate;
+  int _travelers = 2;
+  double _budget = 50000;
+
+  // Preferences
+  String _travelStyle = 'Cultural';
   String _selectedPace = 'Balanced';
-  TimeOfDay _returnTime = const TimeOfDay(hour: 20, minute: 0);
+  String _startingCity = 'Mumbai';
+  bool _surpriseMe = false;
+
+  // Enhanced options
+  String _accommodationType = 'Hotel';
+  String _mealPreference = 'Vegetarian';
+  String _transportPreference = 'Cab';
+
+  // Google Maps API Key
+  late final String _googleMapsApiKey;
+
+  @override
+  void initState() {
+    super.initState();
+    // Load API key from .env
+    _googleMapsApiKey = dotenv.env['GOOGLE_MAPS_API_KEY'] ?? '';
+  }
 
   @override
   void dispose() {
@@ -27,29 +47,78 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
     super.dispose();
   }
 
-  Future<void> _selectDate(BuildContext context, bool isStartDate) async {
-    final DateTime? picked = await showDatePicker(
+  bool _validateInput() {
+    if (_destinationController.text.isEmpty) return false;
+    if (_startDate == null || _endDate == null) return false;
+    if (_startDate!.isAfter(_endDate!)) return false;
+    if (_travelers < 1) return false;
+    if (_budget < 1000) return false;
+    return true;
+  }
+
+  Map<String, dynamic> _preprocessTripInput() {
+    final tripDurationDays =
+        _endDate!.difference(_startDate!).inDays + 1; // inclusive
+    final avgBudgetPerDay = _budget / _travelers / tripDurationDays;
+    final startingCity = _surpriseMe ? 'Auto-Suggested City' : _startingCity;
+
+    return {
+      'destination': _destinationController.text,
+      'startDate': _startDate!.toIso8601String(),
+      'endDate': _endDate!.toIso8601String(),
+      'travelers': _travelers,
+      'budget': _budget,
+      'avgBudgetPerDay': avgBudgetPerDay,
+      'travelStyle': _travelStyle,
+      'pace': _selectedPace,
+      'startingCity': startingCity,
+      'surpriseMe': _surpriseMe,
+      'accommodationType': _accommodationType,
+      'mealPreference': _mealPreference,
+      'transportPreference': _transportPreference,
+      'status': 'PENDING',
+      'createdAt': DateTime.now().toIso8601String(),
+      'googleMapsApiKey': _googleMapsApiKey, // Save API key if needed
+    };
+  }
+
+  Future<void> _saveTrip() async {
+    if (!_validateInput()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all required fields')),
+      );
+      return;
+    }
+
+    final tripData = _preprocessTripInput();
+    final tripDoc = FirebaseFirestore.instance.collection('trips').doc();
+
+    await tripDoc.set({
+      'userId': 'uid_123', // Replace with actual user uid
+      ...tripData,
+    });
+
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SmartItineraryScreen(tripId: tripDoc.id),
+      ),
+    );
+  }
+
+  Future<void> _pickDate({required bool isStart}) async {
+    final now = DateTime.now();
+    final initial = isStart ? _startDate ?? now : _endDate ?? now.add(const Duration(days: 1));
+    final picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
+      initialDate: initial,
+      firstDate: DateTime(2023),
       lastDate: DateTime(2030),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: primaryOrange,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: textDark,
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
     if (picked != null) {
       setState(() {
-        if (isStartDate) {
+        if (isStart) {
           _startDate = picked;
         } else {
           _endDate = picked;
@@ -58,423 +127,131 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
     }
   }
 
-  Future<void> _selectTime(BuildContext context) async {
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: _returnTime,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: primaryOrange,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: textDark,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) {
-      setState(() {
-        _returnTime = picked;
-      });
-    }
-  }
-
-  String _formatDate(DateTime? date) {
-    if (date == null) return 'DD/MM/YY';
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year.toString().substring(2)}';
-  }
-
-  String _formatTime(TimeOfDay time) {
-    final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
-    final minute = time.minute.toString().padLeft(2, '0');
-    final period = time.period == DayPeriod.am ? 'AM' : 'PM';
-    return 'Around $hour:$minute $period';
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: textDark),
-          onPressed: () => Navigator.pop(context),
-        ),
-        centerTitle: true,
-        title: const Text(
-          'Create Your Trip',
-          style: TextStyle(
-            color: textDark,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        title: const Text('Create Trip'),
+        backgroundColor: Colors.deepOrange,
       ),
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header Section
-              const Text(
-                'Plan your journey',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: textDark,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                "Let's craft the perfect itinerary for your Indian adventure.",
-                style: TextStyle(
-                  fontSize: 16,
-                  color: textGray,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // Where to? Section
-              _buildSectionCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Where to?',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: textDark,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _destinationController,
-                      decoration: InputDecoration(
-                        hintText: 'e.g., Jaipur, Kerala',
-                        hintStyle: const TextStyle(color: textGray),
-                        filled: true,
-                        fillColor: cardBackground,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: borderColor),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: borderColor),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: primaryOrange),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 16,
-                        ),
-                        suffixIcon: Container(
-                          margin: const EdgeInsets.all(8),
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: lightOrange,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(
-                            Icons.map_outlined,
-                            color: primaryOrange,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Date Section
-              _buildSectionCard(
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _buildDatePicker(
-                        label: 'Start Date',
-                        value: _formatDate(_startDate),
-                        onTap: () => _selectDate(context, true),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildDatePicker(
-                        label: 'End Date',
-                        value: _formatDate(_endDate),
-                        onTap: () => _selectDate(context, false),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Pace Section
-              _buildSectionCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "What's your pace?",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: textDark,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: cardBackground,
-                        borderRadius: BorderRadius.circular(30),
-                        border: Border.all(color: borderColor),
-                      ),
-                      padding: const EdgeInsets.all(4),
-                      child: Row(
-                        children: [
-                          _buildPaceOption('Relaxed'),
-                          _buildPaceOption('Balanced'),
-                          _buildPaceOption('Packed'),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Return Time Section
-              _buildSectionCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'When do you want to head back?',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: textDark,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    GestureDetector(
-                      onTap: () => _selectTime(context),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 16,
-                        ),
-                        decoration: BoxDecoration(
-                          color: cardBackground,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: borderColor),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              _formatTime(_returnTime),
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: textDark,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: lightOrange,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.access_time,
-                                color: primaryOrange,
-                                size: 20,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Illustration Section
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 40),
-                decoration: BoxDecoration(
-                  color: lightOrange.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildIllustrationIcon(Icons.explore_outlined),
-                    const SizedBox(width: 32),
-                    _buildIllustrationIcon(Icons.luggage_outlined),
-                    const SizedBox(width: 32),
-                    _buildIllustrationIcon(Icons.apartment_outlined),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Generate Button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () {
-                    // Handle generate itinerary
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryOrange,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.auto_awesome, size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        'Generate Smart Itinerary',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionCard({required Widget child}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: child,
-    );
-  }
-
-  Widget _buildDatePicker({
-    required String label,
-    required String value,
-    required VoidCallback onTap,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: textDark,
-          ),
-        ),
-        const SizedBox(height: 8),
-        GestureDetector(
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-            decoration: BoxDecoration(
-              color: cardBackground,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: borderColor),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            // Destination
+            TextField(
+              controller: _destinationController,
+              decoration: const InputDecoration(labelText: 'Destination'),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            const SizedBox(height: 12),
+
+            // Start & End Dates
+            Row(
               children: [
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: value == 'DD/MM/YY' ? textGray : textDark,
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => _pickDate(isStart: true),
+                    child: Text(_startDate == null
+                        ? 'Start Date'
+                        : _startDate!.toLocal().toString().split(' ')[0]),
                   ),
                 ),
-                const Icon(
-                  Icons.calendar_today_outlined,
-                  color: textGray,
-                  size: 18,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => _pickDate(isStart: false),
+                    child: Text(_endDate == null
+                        ? 'End Date'
+                        : _endDate!.toLocal().toString().split(' ')[0]),
+                  ),
                 ),
               ],
             ),
-          ),
-        ),
-      ],
-    );
-  }
+            const SizedBox(height: 12),
 
-  Widget _buildPaceOption(String pace) {
-    final isSelected = _selectedPace == pace;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _selectedPace = pace),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? primaryOrange : Colors.transparent,
-            borderRadius: BorderRadius.circular(25),
-          ),
-          child: Center(
-            child: Text(
-              pace,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: isSelected ? Colors.white : textGray,
-              ),
+            // Travelers
+            TextField(
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Number of Travelers'),
+              onChanged: (v) => _travelers = int.tryParse(v) ?? 1,
             ),
-          ),
+            const SizedBox(height: 12),
+
+            // Budget
+            TextField(
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Budget (₹)'),
+              onChanged: (v) => _budget = double.tryParse(v) ?? 50000,
+            ),
+            const SizedBox(height: 12),
+
+            // Preferences Dropdowns
+            DropdownButtonFormField(
+              value: _travelStyle,
+              items: ['Cultural', 'Adventure', 'Relaxation', 'Romantic']
+                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                  .toList(),
+              onChanged: (v) => setState(() => _travelStyle = v!),
+              decoration: const InputDecoration(labelText: 'Travel Style'),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField(
+              value: _selectedPace,
+              items: ['Slow', 'Balanced', 'Fast']
+                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                  .toList(),
+              onChanged: (v) => setState(() => _selectedPace = v!),
+              decoration: const InputDecoration(labelText: 'Pace'),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField(
+              value: _accommodationType,
+              items: ['Hotel', 'Hostel', 'Guest House', 'Resort']
+                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                  .toList(),
+              onChanged: (v) => setState(() => _accommodationType = v!),
+              decoration: const InputDecoration(labelText: 'Accommodation'),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField(
+              value: _mealPreference,
+              items: ['Vegetarian', 'Non-Vegetarian', 'Vegan']
+                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                  .toList(),
+              onChanged: (v) => setState(() => _mealPreference = v!),
+              decoration: const InputDecoration(labelText: 'Meal Preference'),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField(
+              value: _transportPreference,
+              items: ['Cab', 'Public Transport', 'Self-drive', 'Bike']
+                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                  .toList(),
+              onChanged: (v) => setState(() => _transportPreference = v!),
+              decoration: const InputDecoration(labelText: 'Transport Preference'),
+            ),
+            const SizedBox(height: 16),
+
+            // Surprise Me Checkbox
+            CheckboxListTile(
+              title: const Text('Surprise Me (Auto-select starting city)'),
+              value: _surpriseMe,
+              onChanged: (v) => setState(() => _surpriseMe = v!),
+            ),
+            const SizedBox(height: 24),
+
+            // Save Button
+            ElevatedButton(
+              onPressed: _saveTrip,
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size.fromHeight(50),
+                backgroundColor: Colors.deepOrange,
+              ),
+              child: const Text('Generate Smart Itinerary'),
+            ),
+          ],
         ),
       ),
-    );
-  }
-
-  Widget _buildIllustrationIcon(IconData icon) {
-    return Icon(
-      icon,
-      size: 40,
-      color: primaryOrange.withOpacity(0.6),
     );
   }
 }

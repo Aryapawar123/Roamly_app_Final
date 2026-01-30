@@ -16,7 +16,7 @@ def sanitize_doc_id(name):
     doc_id = re.sub(r"[#/\[\]]","",doc_id)
     return doc_id
 
-def upload_places(places, collection_name="Goa"):
+def upload_places(places, collection_name="goa"):
     batch = db.batch()
     count = 0
     for place in places:
