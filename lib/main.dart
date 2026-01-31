@@ -6,7 +6,7 @@ import 'auth_gate.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 1️⃣ Load environment variables first
+  // 1️⃣ Load environment variables
   try {
     await dotenv.load(fileName: ".env");
     print('✅ .env loaded successfully');
