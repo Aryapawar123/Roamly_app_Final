@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:my_flutter_app_fixed/screens/memory_timeline_screen.dart';
 
 import 'goadetails_screen.dart';
 import 'search_results_page.dart';
@@ -93,13 +94,13 @@ class _ExploreHomeScreenState extends State<ExploreHomeScreen> {
       case 1: // Itinerary
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => MyTripsScreen()),
+          MaterialPageRoute(builder: (_) => const MyTripsScreen()),
         );
         break;
       case 2: // Expenses
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const ExpenseSplitScreen()),
+          MaterialPageRoute(builder: (_) => const MemoryTimelineScreen()),
         );
         break;
       case 3: // More
