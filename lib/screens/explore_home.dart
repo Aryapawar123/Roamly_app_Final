@@ -29,85 +29,41 @@ class _ExploreHomeScreenState extends State<ExploreHomeScreen> {
   }
 
   Future<void> _getCurrentLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) return;
 
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      setState(() => _selectedLocation = 'Location services disabled');
-      return;
-    }
-
-    permission = await Geolocator.checkPermission();
+    LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        setState(() => _selectedLocation = 'Location permission denied');
-        return;
-      }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      setState(() => _selectedLocation = 'Location permission permanently denied');
-      return;
+      if (permission == LocationPermission.denied) return;
     }
 
     Position position = await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.high,
     );
 
-    List<Placemark> placemarks = await placemarkFromCoordinates(
-      position.latitude,
-      position.longitude,
-    );
+    List<Placemark> placemarks =
+        await placemarkFromCoordinates(position.latitude, position.longitude);
 
     if (placemarks.isNotEmpty) {
-      Placemark place = placemarks.first;
       setState(() {
-        _selectedLocation = '${place.locality}, ${place.country}';
+        _selectedLocation =
+            '${placemarks.first.locality}, ${placemarks.first.country}';
       });
-    } else {
-      setState(() => _selectedLocation = 'Unknown location');
-    }
-  }
-
-  void _onSearch() {
-    final query = _searchController.text.trim();
-    if (query.isNotEmpty) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => SearchResultsPage(searchQuery: query),
-        ),
-      );
     }
   }
 
   void _onNavItemTap(int index) {
     setState(() => _selectedIndex = index);
 
-    switch (index) {
-      case 0: // Home
-        // Already on home, do nothing
-        break;
-      case 1: // Itinerary
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => MyTripsScreen()),
-        );
-        break;
-      case 2: // Expenses
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const ExpenseSplitScreen()),
-        );
-        break;
-      case 3: // More
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const GroupMembersScreen()),
-        );
-        break;
+    if (index == 1) {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => MyTripsScreen()));
+    } else if (index == 2) {
+      Navigator.push(
+          context, MaterialPageRoute(builder: (_) => const ExpenseSplitScreen()));
+    } else if (index == 3) {
+      Navigator.push(
+          context, MaterialPageRoute(builder: (_) => const GroupMembersScreen()));
     }
   }
 
@@ -124,31 +80,38 @@ class _ExploreHomeScreenState extends State<ExploreHomeScreen> {
               _buildWhereToText(),
               const SizedBox(height: 20),
               _buildSearchBar(),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
               _buildPopularDestinations(),
-              const SizedBox(height: 20),
+              const SizedBox(height: 32),
               _buildTrendingExperiences(),
               const SizedBox(height: 20),
             ],
           ),
         ),
       ),
+
+      // 🔥 FIXED NAV BAR
       bottomNavigationBar: _buildBottomNav(),
+
+      // ➕ FAB KEPT AS IS
       floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.orange,
+        elevation: 4,
         onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const CreateTripScreen()),
           );
         },
-        backgroundColor: Colors.orange,
-        child: const Icon(Icons.add, color: Color.fromARGB(255, 21, 6, 6)),
+        child: const Icon(Icons.add, color: Colors.black),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 
-  Widget _buildHeader() {
+  // ================= HEADER =================
+
+    Widget _buildHeader() {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -166,45 +129,28 @@ class _ExploreHomeScreenState extends State<ExploreHomeScreen> {
                 child: const Icon(Icons.explore, color: Colors.orange),
               ),
               const SizedBox(width: 12),
-              GestureDetector(
-                onTap: () {
-                  // Optional: manual location picker
-                },
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _selectedLocation,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(_selectedLocation,
                       style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    const Text('Cloudy • 28°C', style: TextStyle(fontSize: 12)),
-                  ],
-                ),
+                          fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Text('Cloudy • 28°C', style: TextStyle(fontSize: 12)),
+                ],
               ),
             ],
           ),
-          Row(
-            children: [
-              IconButton(onPressed: () {}, icon: const Icon(Icons.notifications_outlined)),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AccountDetailsPage()),
-                  );
-                },
-                child: const CircleAvatar(
-                  radius: 18,
-                  backgroundImage: NetworkImage(
-                    'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100',
-                  ),
-                ),
+          GestureDetector(
+            onTap: () {
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const AccountDetailsPage()));
+            },
+            child: const CircleAvatar(
+              radius: 18,
+              backgroundImage: NetworkImage(
+                'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100',
               ),
-            ],
+            ),
           ),
         ],
       ),
@@ -212,12 +158,10 @@ class _ExploreHomeScreenState extends State<ExploreHomeScreen> {
   }
 
   Widget _buildWhereToText() {
-    return const Center(
-      child: Text(
-        'Where do you\nwanna go?',
-        textAlign: TextAlign.center,
-        style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold),
-      ),
+    return const Text(
+      'Where do you\nwanna go?',
+      textAlign: TextAlign.center,
+      style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold),
     );
   }
 
@@ -226,19 +170,16 @@ class _ExploreHomeScreenState extends State<ExploreHomeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: TextField(
         controller: _searchController,
-        onSubmitted: (_) => _onSearch(),
         decoration: InputDecoration(
           hintText: 'Search destinations, trips...',
           prefixIcon: const Icon(Icons.search),
-          suffixIcon: IconButton(
-            icon: const Icon(Icons.clear),
-            onPressed: () => _searchController.clear(),
-          ),
-          border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
         ),
       ),
     );
   }
+
+  // ================= POPULAR DESTINATIONS =================
 
   Widget _buildPopularDestinations() {
     return Column(
@@ -246,22 +187,41 @@ class _ExploreHomeScreenState extends State<ExploreHomeScreen> {
       children: [
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
-          child: Text('Popular Destinations', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          child: Text(
+            'Popular Destinations',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
         ),
         const SizedBox(height: 16),
         SizedBox(
-          height: 200,
+          height: 280,
           child: ListView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             children: [
-              _destinationCard('Rajasthan', 'Oct 12-18', 'Heritage Tour', () {}),
+              _destinationCard(
+                'Rajasthan',
+                'Oct 12 - 18 • Heritage Tour',
+                'https://images.unsplash.com/photo-1599661046289-e31897846e41',
+                () {},
+              ),
               const SizedBox(width: 16),
-              _destinationCard('Kerala', 'Nov 02-10', 'Backwaters', () {}),
+              _destinationCard(
+                'Kerala',
+                'Nov 02 - 10 • Backwaters',
+                'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944',
+                () {},
+              ),
               const SizedBox(width: 16),
-              _destinationCard('Goa', 'Dec 20-26', 'Beach Vacation', () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const GoaDetailScreen()));
-              }),
+              _destinationCard(
+                'Goa',
+                'Dec 20 - 26 • Beach Vacation',
+                'https://images.unsplash.com/photo-1507525428034-b723cf961d3e',
+                () {
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const GoaDetailScreen()));
+                },
+              ),
             ],
           ),
         ),
@@ -269,25 +229,38 @@ class _ExploreHomeScreenState extends State<ExploreHomeScreen> {
     );
   }
 
-  Widget _destinationCard(String title, String date, String type, VoidCallback onTap) {
+  Widget _destinationCard(
+      String title, String subtitle, String imageUrl, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: 140,
-        padding: const EdgeInsets.all(8),
-        color: Colors.orange.shade50,
+      child: SizedBox(
+        width: 200,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(height: 100, color: Colors.orange.shade100),
-            const SizedBox(height: 8),
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-            Text('$date • $type', style: const TextStyle(fontSize: 12)),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(28),
+              child: Image.network(
+                imageUrl,
+                height: 200,
+                width: 200,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(title,
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text(subtitle,
+                style: const TextStyle(fontSize: 12, color: Colors.grey)),
           ],
         ),
       ),
     );
   }
+
+  // ================= TRENDING EXPERIENCES =================
 
   Widget _buildTrendingExperiences() {
     return Column(
@@ -295,48 +268,117 @@ class _ExploreHomeScreenState extends State<ExploreHomeScreen> {
       children: [
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
-          child: Text('Trending Experiences', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          child: Text(
+            'Trending Experiences',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
         ),
         const SizedBox(height: 16),
-        Column(
-          children: [
-            _experienceCard('Yoga Retreat', 'Rishikesh', '5 Days', '₹12,500'),
-            const SizedBox(height: 8),
-            _experienceCard('Heritage Walk', 'Old Delhi', '4 Hours', '₹1,200'),
-            const SizedBox(height: 8),
-            _experienceCard('Mountain Trek', 'Manali', '3 Days', '₹8,500'),
-          ],
+        _experienceCard(
+          'Yoga Retreat',
+          'Rishikesh • 5 Days',
+          '₹12,500',
+          'https://images.unsplash.com/photo-1599447421416-3414500d18a5',
+        ),
+        _experienceCard(
+          'Heritage Walk',
+          'Old Delhi • 4 Hours',
+          '₹1,200',
+          'https://images.unsplash.com/photo-1587474260584-136574528ed5',
+        ),
+        _experienceCard(
+          'Mountain Trek',
+          'Manali • 3 Days',
+          '₹8,500',
+          'https://images.unsplash.com/photo-1501785888041-af3ef285b470',
         ),
       ],
     );
   }
 
-  Widget _experienceCard(String title, String location, String duration, String price) {
+  Widget _experienceCard(
+      String title, String subtitle, String price, String imageUrl) {
     return Container(
-      padding: const EdgeInsets.all(12),
-      color: Colors.orange.shade50,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text('$title\n$location • $duration'),
-          Text(price),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(30),
+            child: Image.network(
+              imageUrl,
+              width: 56,
+              height: 56,
+              fit: BoxFit.cover,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text(subtitle,
+                    style:
+                        const TextStyle(fontSize: 12, color: Colors.grey)),
+                const SizedBox(height: 6),
+                Text(
+                  '$price /person',
+                  style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Colors.orange.shade50,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.arrow_forward_ios,
+                size: 16, color: Colors.orange),
+          ),
         ],
       ),
     );
   }
 
+  // ================= BOTTOM NAV =================
+
   Widget _buildBottomNav() {
     return BottomAppBar(
       shape: const CircularNotchedRectangle(),
-      notchMargin: 8,
+      notchMargin: 10,
+      elevation: 8,
       child: SizedBox(
-        height: 60,
+        height: 64,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _navItem(Icons.home, 'Home', 0),
+            _navItem(Icons.home_filled, 'Home', 0),
             _navItem(Icons.map_outlined, 'Itinerary', 1),
-            const SizedBox(width: 48), // FAB space
+
+            // space for FAB
+            const SizedBox(width: 48),
+
             _navItem(Icons.receipt_long_outlined, 'Expenses', 2),
             _navItem(Icons.menu, 'More', 3),
           ],
@@ -346,15 +388,25 @@ class _ExploreHomeScreenState extends State<ExploreHomeScreen> {
   }
 
   Widget _navItem(IconData icon, String label, int index) {
-    final isSelected = _selectedIndex == index;
+    final bool isSelected = _selectedIndex == index;
     return GestureDetector(
       onTap: () => _onNavItemTap(index),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: isSelected ? Colors.orange : Colors.grey),
-          Text(label, style: TextStyle(color: isSelected ? Colors.orange : Colors.grey)),
+          Icon(
+            icon,
+            size: 22,
+            color: isSelected ? Colors.orange : Colors.grey,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: isSelected ? Colors.orange : Colors.grey,
+            ),
+          ),
         ],
       ),
     );
