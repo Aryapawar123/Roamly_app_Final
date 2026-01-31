@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+// 🔹 Import your pages
+import 'edit_profile_page.dart';
+import 'privacy_security_page.dart';
+import 'help_support_page.dart';
+
 class AccountDetailsPage extends StatelessWidget {
   const AccountDetailsPage({super.key});
 
@@ -17,7 +22,7 @@ class AccountDetailsPage extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // Profile image
+            // 👤 Profile Image
             CircleAvatar(
               radius: 48,
               backgroundImage: NetworkImage(
@@ -28,6 +33,7 @@ class AccountDetailsPage extends StatelessWidget {
 
             const SizedBox(height: 16),
 
+            // 👤 Name
             Text(
               user?.displayName ?? 'Roamly User',
               style: const TextStyle(
@@ -38,6 +44,7 @@ class AccountDetailsPage extends StatelessWidget {
 
             const SizedBox(height: 6),
 
+            // 📧 Email
             Text(
               user?.email ?? '',
               style: TextStyle(
@@ -48,33 +55,62 @@ class AccountDetailsPage extends StatelessWidget {
 
             const SizedBox(height: 30),
 
+            // ✏️ Edit Profile
             _accountTile(
               icon: Icons.person_outline,
               title: 'Edit Profile',
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const EditProfilePage(),
+                  ),
+                );
+              },
             ),
 
+            // 🔐 Privacy & Security
             _accountTile(
               icon: Icons.lock_outline,
               title: 'Privacy & Security',
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const PrivacySecurityPage(),
+                  ),
+                );
+              },
             ),
 
+            // ❓ Help & Support
             _accountTile(
               icon: Icons.help_outline,
               title: 'Help & Support',
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const HelpSupportPage(),
+                  ),
+                );
+              },
             ),
 
             const Spacer(),
 
+            // 🚪 Logout
             _accountTile(
               icon: Icons.logout,
               title: 'Logout',
               color: Colors.red,
               onTap: () async {
                 await FirebaseAuth.instance.signOut();
-                Navigator.pop(context);
+
+                // AuthGate will automatically redirect
+                if (context.mounted) {
+                  Navigator.pop(context);
+                }
               },
             ),
           ],
@@ -83,6 +119,7 @@ class AccountDetailsPage extends StatelessWidget {
     );
   }
 
+  // 🔹 Reusable tile widget
   Widget _accountTile({
     required IconData icon,
     required String title,
